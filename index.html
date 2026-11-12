@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NAABOL Carga - Sistema de Gestión</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        navy: {
+                            50: '#f0f4f8',
+                            100: '#d9e2ec',
+                            800: '#102a43',
+                            900: '#0b1e33',
+                            950: '#06101c',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 h-screen flex overflow-hidden">
+
+    <!-- Toast de Notificaciones -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- MODAL DE CONTRASEÑA -->
+    <div id="modal-auth" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-slate-200">
+            <h3 class="text-base font-bold text-navy-950 mb-1">Acceso de Edición</h3>
+            <p class="text-xs text-slate-500 mb-4">Ingrese la contraseña para realizar cambios en el sistema.</p>
+            
+            <form onsubmit="verificarPasswordModal(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Contraseña *</label>
+                    <input type="password" id="auth-password" required placeholder="••••" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-navy-800">
+                    <p id="auth-error" class="text-xs text-red-600 mt-1 hidden">Contraseña incorrecta.</p>
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="cerrarModal('modal-auth')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-sm transition-all">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-navy-900 hover:bg-navy-950 text-white font-semibold rounded-xl text-sm transition-all shadow-sm">Desbloquear</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- BARRA LATERAL (SIDEBAR) -->
+    <aside class="w-72 bg-navy-950 text-slate-300 flex flex-col justify-between border-r border-navy-900 shadow-xl z-20 transition-all duration-300">
+        <div>
+            <!-- LOGOTIPO Y ENCABEZADO -->
+            <div class="p-6 border-b border-navy-900 flex flex-col items-center justify-center text-center">
+                <div class="w-full bg-navy-900/50 p-3 rounded-xl border border-navy-800 mb-3 flex items-center justify-center shadow-inner">
+                    <img src="logo-transparente NAABOL NUEVO.png" alt="NAABOL Carga Logo" class="max-h-16 w-auto object-contain drop-shadow" onerror="this.onerror=null; this.src='https://placehold.co/200x60/0b1e33/ffffff?text=NAABOL+CARGA';">
+                </div>
+                <h1 class="text-white font-bold text-base tracking-wide">Gestión de Personal</h1>
+                <p class="text-xs text-slate-400 mt-0.5">Control y Turnos</p>
+            </div>
+
+            <!-- NAVEGACIÓN PRINCIPAL -->
+            <nav class="p-4 space-y-1.5">
+                <button type="button" onclick="cambiarTab('personal')" id="nav-personal" class="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-medium transition-all bg-navy-900 text-white shadow-sm border border-navy-800">
+                    <span>1. Personal</span>
+                </button>
+
+                <button type="button" onclick="cambiarTab('vacaciones')" id="nav-vacaciones" class="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-medium transition-all text-slate-400 hover:bg-navy-900/60 hover:text-white">
+                    <span>2. Vacaciones</span>
+                </button>
+
+                <button type="button" onclick="cambiarTab('turnos')" id="nav-turnos" class="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-medium transition-all text-slate-400 hover:bg-navy-900/60 hover:text-white">
+                    <span>3. Turnos</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- PIE DE BARRA LATERAL -->
+        <div class="p-4 border-t border-navy-900 bg-navy-950/80">
+            <div class="bg-navy-900/60 rounded-xl p-3 border border-navy-800 text-center">
+                <p class="text-xs font-bold text-white tracking-wide">Naabol Carga</p>
+                <p class="text-[11px] text-sky-400 font-medium mt-0.5">Carlos Almanza Aguirre</p>
+            </div>
+        </div>
+    </aside>
+
+    <!-- CONTENEDOR PRINCIPAL -->
+    <div class="flex-1 flex flex-col h-full overflow-hidden">
+        
+        <!-- HEADER SUPERIOR -->
+        <header class="h-16 bg-white border-b border-slate-200 px-8 flex items-center justify-between shadow-xs z-10">
+            <div class="flex items-center gap-3">
+                <h2 id="page-title" class="text-xl font-bold text-navy-950">Directorio de Personal</h2>
+            </div>
+            <div class="flex items-center gap-3">
+                <button type="button" id="btn-auth-toggle" onclick="toggleEstadoEdicion()" class="text-xs font-semibold px-3 py-1.5 rounded-full border border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all flex items-center gap-1.5">
+                    <span>Modo Solo Lectura</span>
+                </button>
+                <span id="total-staff-counter" class="text-xs font-semibold bg-navy-50 text-navy-800 px-3 py-1.5 rounded-full border border-navy-100">0 Empleados Activos</span>
+                <span class="text-xs font-medium bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-full border border-emerald-200 flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Sistema en línea
+                </span>
+            </div>
+        </header>
+
+        <!-- CONTENIDO DINÁMICO CON SCROLL -->
+        <main class="flex-1 overflow-y-auto p-8 bg-slate-100">
+            
+            <!-- ================= MÓDULO 1: PERSONAL ================= -->
+            <section id="tab-personal" class="space-y-6">
+                <!-- Formulario -->
+                <div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-6">
+                    <h3 class="text-base font-bold text-navy-950 mb-4">Registrar Nuevo Empleado</h3>
+                    <form id="form-personal" onsubmit="guardarPersonal(event)" class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Nombre Completo *</label>
+                            <input type="text" id="nombre-empleado" required placeholder="Ej. Juan Pérez" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-navy-800">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Cargo *</label>
+                            <input type="text" id="cargo-empleado" required placeholder="Ej. Operador Logístico" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-navy-800">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Grupo (Color Gantt)</label>
+                            <select id="grupo-empleado" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-navy-800">
+                                <option value="Grupo A">Grupo A (Celeste)</option>
+                                <option value="Grupo B">Grupo B (Verde)</option>
+                                <option value="Grupo C">Grupo C (Lila)</option>
+                                <option value="Sin Grupo">Sin Grupo (Azul Marino)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Días Acumulados *</label>
+                            <input type="number" id="dias-acumulados" required min="0" max="90" value="15" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-navy-800">
+                        </div>
+                        <div>
+                            <button type="submit" class="w-full bg-navy-900 hover:bg-navy-950 text-white font-semibold py-2.5 px-4 rounded-xl text-sm transition-all shadow-sm">
+                                Guardar Empleado
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Tabla Personal -->
+                <div class="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
+                    <div class="p-6 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <div>
+                            <h3 class="text-base font-bold text-navy-950">Directorio de Funcionarios</h3>
+                            <p id="contador-empleados" class="text-xs text-slate-500 mt-0.5">0 Empleados registrados</p>
+                        </div>
+                        <div class="w-full sm:w-72">
+                            <input type="text" id="buscador-personal" oninput="filtrarPersonal(this.value)" placeholder="Buscar por nombre o cargo..." class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-navy-800">
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-600 text-xs uppercase tracking-wider border-b border-slate-200">
+                                    <th class="py-3 px-6">Funcionario</th>
+                                    <th class="py-3 px-6">Cargo</th>
+                                    <th class="py-3 px-6">Grupo</th>
+                                    <th class="py-3 px-6 text-center">Días Acumulados</th>
+                                    <th class="py-3 px-6 text-right">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-personal-body" class="divide-y divide-slate-100 text-sm text-slate-700"></tbody>
+                        </table>
+                    </div>
+                    <div id="empty-state-personal" class="hidden p-12 text-center">
+                        <p class="text-sm font-medium text-slate-600">No se encontraron empleados registrados.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= MÓDULO 2: VACACIONES ================= -->
+            <section id="tab-vacaciones" class="space-y-6 hidden">
+                <div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-6">
+                    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6 pb-4 border-b border-slate-100">
+                        <div>
+                            <h3 class="text-base font-bold text-navy-950">Programación de Vacaciones</h3>
+                            <p class="text-xs text-slate-500 mt-0.5">Asigne periodos de descanso a su personal activo.</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-3 text-xs bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                            <span class="font-semibold text-slate-700 mr-1">Leyenda Grupos:</span>
+                            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-sky-400"></span> Grupo A (Celeste)</span>
+                            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-emerald-500"></span> Grupo B (Verde)</span>
+                            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-purple-400"></span> Grupo C (Lila)</span>
+                            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-navy-900"></span> Sin Grupo (Azul)</span>
+                            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-amber-400 animate-pulse"></span> Cruce</span>
+                        </div>
+                    </div>
+
+                    <form id="form-vacaciones" onsubmit="guardarVacacion(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Seleccionar Funcionario *</label>
+                            <select id="select-empleado-vacacion" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-navy-800">
+                                <option value="">-- Seleccione empleado --</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Fecha de Inicio *</label>
+                            <input type="date" id="vacacion-inicio" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-navy-800">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Fecha de Fin *</label>
+                            <input type="date" id="vacacion-fin" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-navy-800">
+                        </div>
+                        <div>
+                            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 px-4 rounded-xl text-sm transition-all shadow-sm">
+                                Programar Vacación
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-6 overflow-hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-base font-bold text-navy-950">Diagrama de Gantt (Mes Actual - Días 1 al 30)</h3>
+                        <span class="text-xs text-slate-500 bg-slate-100 px-3 py-1 rounded-full font-medium">Visualización de Solapamientos</span>
+                    </div>
+                    <div id="gantt-container" class="overflow-x-auto pb-4"></div>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
+                    <div class="p-6 border-b border-slate-200">
+                        <h3 class="text-base font-bold text-navy-950">Historial de Vacaciones Registradas</h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-
